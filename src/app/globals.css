@@ -1,0 +1,28 @@
+@import "tailwindcss";
+
+:root {
+  --navy: #20384f;
+  --navy-light: #466177;
+  --aqua: #bfe7f7;
+  --aqua-mid: #8dcce4;
+  --aqua-soft: #eef8fd;
+  --aqua-border: #d8edf7;
+  --gray-light: #f8fcff;
+  --text-dark: #20384f;
+  --text-mid: #466177;
+}
+
+@theme inline {
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  color: var(--text-dark);
+  background: var(--gray-light);
+  font-family: "Noto Sans JP", "Hiragino Kaku Gothic ProN", "Meiryo", sans-serif;
+}
