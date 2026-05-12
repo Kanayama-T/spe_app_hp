@@ -102,7 +102,7 @@ export default function AiPhilosophyPage() {
               <div className="absolute inset-0 bg-[#f8fcff]/10" />
             </div>
             <div className="absolute bottom-8 left-0 flex h-24 w-48 items-center gap-4 bg-[#bfe7f7] px-7 shadow-2xl shadow-[#9ccfe1]/30">
-              <span className="text-5xl font-light leading-none">38</span>
+              <span className="text-5xl font-light leading-none">42</span>
               <span className="text-[10px] font-black uppercase leading-4 tracking-[0.22em]">
                 Years
                 <br />
