@@ -83,7 +83,7 @@ async function sendByResend(payload: Required<Omit<ContactPayload, "website" | "
       from,
       to: [to],
       reply_to: payload.email,
-      subject: "【SPE】お問い合わせが届きました",
+      subject: "【HPよりお問い合わせが届きました！】",
       text,
     }),
   });
