@@ -22,6 +22,7 @@
 
 ### 2.3 お問い合わせフォーム実装
 - 送信先メール: `info@sp-jp.com`
+- メール件名: `【HPよりお問い合わせが届きました！】`
 - クライアントから `POST /api/contact` で送信。
 - Cloudflare Turnstileトークン必須化。
 - サーバー側で以下を実装:
@@ -116,15 +117,36 @@
 3. `42 Years of Trust` が反映されている
 4. `/contact` でTurnstileが表示される
 5. 必須入力 + Turnstile完了で送信成功
-6. `info@sp-jp.com` へメール到達する
+6. 件名 `【HPよりお問い合わせが届きました！】` で受信
+7. `info@sp-jp.com` へメール到達する
 
 ## 8. 既知事項
 - この作業環境ではネイティブ依存不足によりローカル `next build` 検証が失敗するケースあり。
 - Vercel上でのビルド/公開を正として運用。
+- 現時点で `/contact` にTurnstileウィジェットが表示されないケースがあり、フォームで
+  `「私はロボットではありません」の認証を完了してください。`
+  が表示され送信できない事象が継続中。
+- Pre-clearance (`Yes/No`) は今回の表示有無には基本無関係。
 
 ## 9. 次にやるべきこと（推奨）
 
-1. Resendドメイン認証（`sp-jp.com`）
-2. `CONTACT_FROM_EMAIL` を独自ドメイン送信元へ変更
-3. お問い合わせフォーム実送信テスト（本番）
-4. 受信メールの迷惑メール判定を確認（SPF/DKIM/DMARC）
+1. Turnstile表示不具合の切り分け
+2. Resendドメイン認証（`sp-jp.com`）
+3. `CONTACT_FROM_EMAIL` を独自ドメイン送信元へ変更
+4. お問い合わせフォーム実送信テスト（本番）
+5. 受信メールの迷惑メール判定を確認（SPF/DKIM/DMARC）
+
+## 10. 次回の最初の確認手順（Turnstile不具合）
+
+1. Vercel Environment Variables の値再確認
+   - `NEXT_PUBLIC_TURNSTILE_SITE_KEY`
+   - `TURNSTILE_SECRET_KEY`
+2. Cloudflare Turnstile widget の Hostname再確認
+   - `www.sp-jp.com`
+   - `sp-jp.com`
+3. Vercelで `Redeploy` 実行（環境変数反映）
+4. ブラウザで `https://www.sp-jp.com/contact` を `Ctrl+F5` で再読込
+5. 広告ブロッカーOFF / シークレットモード / 別ブラウザ（Chrome/Edge）で表示確認
+6. まだ表示されない場合:
+   - 開発者ツールConsoleのエラー採取
+   - Site Keyの再発行と差し替え
