@@ -1,23 +1,82 @@
 "use client";
-import { useState } from "react";
+import Script from "next/script";
+import { useEffect, useState } from "react";
+
+declare global {
+  interface Window {
+    turnstile?: {
+      render: (selector: string, options: { sitekey: string; callback: (token: string) => void; "expired-callback": () => void }) => string;
+      remove: (widgetId: string) => void;
+    };
+  }
+}
 
 export default function ContactPage() {
   const [sent, setSent] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState("");
+  const [turnstileToken, setTurnstileToken] = useState("");
   const [form, setForm] = useState({
-    name: "", company: "", tel: "", email: "", type: "", message: "",
+    name: "", company: "", tel: "", email: "", type: "", message: "", website: "",
   });
+  const siteKey = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY;
+
+  useEffect(() => {
+    if (!siteKey || !window.turnstile || sent) return;
+
+    const widgetId = window.turnstile.render("#turnstile-widget", {
+      sitekey: siteKey,
+      callback: (token: string) => setTurnstileToken(token),
+      "expired-callback": () => setTurnstileToken(""),
+    });
+
+    return () => {
+      if (window.turnstile) {
+        window.turnstile.remove(widgetId);
+      }
+    };
+  }, [siteKey, sent]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     setForm({ ...form, [e.target.name]: e.target.value });
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setSent(true);
+    setError("");
+
+    if (!siteKey) {
+      setError("現在フォーム送信の設定が未完了です。管理者にご連絡ください。");
+      return;
+    }
+    if (!turnstileToken) {
+      setError("「私はロボットではありません」の認証を完了してください。");
+      return;
+    }
+
+    setSubmitting(true);
+    try {
+      const response = await fetch("/api/contact", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ...form, turnstileToken }),
+      });
+      const payload = (await response.json()) as { ok?: boolean; error?: string };
+      if (!response.ok || !payload.ok) {
+        setError(payload.error ?? "送信に失敗しました。時間をおいて再度お試しください。");
+        return;
+      }
+      setSent(true);
+    } catch {
+      setError("通信エラーが発生しました。時間をおいて再度お試しください。");
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
     <div className="pt-16 bg-[#f8fcff] text-[#20384f]">
+      <Script src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit" strategy="afterInteractive" />
       {/* Header */}
       <section className="border-b border-[#d8edf7] px-6 py-16">
         <div className="max-w-4xl mx-auto">
@@ -52,6 +111,16 @@ export default function ContactPage() {
               </div>
 
               <form onSubmit={handleSubmit} className="bg-white/45 border border-[#d8edf7] p-8 space-y-5">
+                <input
+                  type="text"
+                  name="website"
+                  value={form.website}
+                  onChange={handleChange}
+                  autoComplete="off"
+                  tabIndex={-1}
+                  className="hidden"
+                  aria-hidden="true"
+                />
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-black text-[#20384f] mb-1.5">
@@ -124,10 +193,21 @@ export default function ContactPage() {
 
                 <button
                   type="submit"
+                  disabled={submitting || !siteKey}
                   className="w-full rounded-full bg-[#bfe7f7] py-3.5 text-sm font-black text-[#20384f] transition-all hover:bg-[#aee0f3]"
                 >
-                  送信する
+                  {submitting ? "送信中..." : "送信する"}
                 </button>
+                {siteKey ? (
+                  <div id="turnstile-widget" />
+                ) : (
+                  <p className="text-xs text-red-600">
+                    フォーム認証設定が未完了のため送信できません。
+                  </p>
+                )}
+                {error && (
+                  <p className="text-xs text-red-600">{error}</p>
+                )}
                 <p className="text-xs text-center text-[#6b8397]">
                   通常2営業日以内にご返信いたします。
                 </p>
