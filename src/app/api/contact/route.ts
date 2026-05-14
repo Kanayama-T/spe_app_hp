@@ -32,7 +32,9 @@ function checkRateLimit(ip: string) {
 
 async function verifyTurnstile(token: string, ip: string) {
   const secret = process.env.TURNSTILE_SECRET_KEY;
-  if (!secret) return false;
+  if (!secret) {
+    return { ok: false, errorCodes: ["missing-input-secret"] };
+  }
 
   const body = new URLSearchParams({
     secret,
@@ -45,10 +47,12 @@ async function verifyTurnstile(token: string, ip: string) {
     headers: { "Content-Type": "application/x-www-form-urlencoded" },
     body,
   });
-  if (!response.ok) return false;
+  if (!response.ok) {
+    return { ok: false, errorCodes: [`http-${response.status}`] };
+  }
 
-  const result = (await response.json()) as { success?: boolean };
-  return Boolean(result.success);
+  const result = (await response.json()) as { success?: boolean; "error-codes"?: string[] };
+  return { ok: Boolean(result.success), errorCodes: result["error-codes"] ?? [] };
 }
 
 async function sendByResend(payload: Required<Omit<ContactPayload, "website" | "turnstileToken">>) {
@@ -124,7 +128,11 @@ export async function POST(request: NextRequest) {
   }
 
   const verified = await verifyTurnstile(token, ip);
-  if (!verified) {
+  if (!verified.ok) {
+    console.error("Turnstile verification failed", {
+      errorCodes: verified.errorCodes,
+      ip,
+    });
     return NextResponse.json({ ok: false, error: "ロボット認証に失敗しました。再度お試しください。" }, { status: 400 });
   }
 

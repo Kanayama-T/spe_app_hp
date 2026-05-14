@@ -1,9 +1,10 @@
 const history = [
-  { year: "1984年", event: "システムプランエクセレンス 創業" },
-  { year: "2005年", event: "有限会社システムプランエクセレンス 設立" },
-  { year: "2010年代", event: "大手飲食チェーン向け人事・給与計算システムなど、大規模案件への対応を強化" },
-  { year: "2020年〜", event: "生成AIを活用した業務改善支援を開始。「データ設計が先、AIは後」という方針を確立" },
-  { year: "2026年", event: "AI導入設計・データ見える化を主力サービスとして体制強化。東三河を中心に支援を拡大中" },
+  { year: "1983年", event: "創業" },
+  { year: "1980年代後半", event: "業務システム開発開始" },
+  { year: "2000年代", event: "Web・オープン系システムに対応" },
+  { year: "2020年以降", event: "AWS導入・インフラ構築支援" },
+  { year: "2024年以降", event: "AI・OCR活用サービス開始" },
+  { year: "現在", event: "DX推進・業務改善をトータルで支援" },
 ];
 
 const strengths = [
@@ -27,6 +28,14 @@ const strengths = [
     title: "使われるまで伴走する",
     desc: "導入して終わりではありません。現場に定着するまで、長期パートナーとして関わり続けます。",
   },
+];
+
+const flyerServices = [
+  "業務システム開発（販売管理・在庫管理・生産管理など）",
+  "クラウドシステム（AWS活用による拠点間連携・効率化）",
+  "AI・OCR活用（紙帳票・手入力業務の自動化）",
+  "データ分析ダッシュボード（見える化と意思決定支援）",
+  "既存システム改修／帳票システム／在庫・販売・生産管理／AWSインフラ構築",
 ];
 
 export default function CompanyPage() {
@@ -89,6 +98,15 @@ export default function CompanyPage() {
             </p>
           </div>
 
+          <div className="border border-[#d8edf7] bg-white/45 p-6 mb-16">
+            <h2 className="text-xl font-black mb-4">チラシ掲載の主な対応領域</h2>
+            <ul className="space-y-2 text-sm text-[#466177] leading-7">
+              {flyerServices.map((service) => (
+                <li key={service}>・{service}</li>
+              ))}
+            </ul>
+          </div>
+
           {/* Company Info + Strengths */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-16">
             <div>
@@ -134,11 +152,11 @@ export default function CompanyPage() {
           <div>
             <h2 className="text-xl font-black mb-8">沿革</h2>
             <div className="relative">
-              <div className="absolute left-16 top-0 bottom-0 w-px bg-[#d8edf7]" />
+              <div className="absolute left-24 top-0 bottom-0 w-px bg-[#d8edf7]" />
               <div className="space-y-6">
                 {history.map((h) => (
                   <div key={h.year} className="flex items-start gap-6">
-                    <div className="w-16 text-right text-sm font-black text-[#8dcce4]">{h.year}</div>
+                    <div className="w-24 whitespace-nowrap text-right text-sm font-black text-[#8dcce4]">{h.year}</div>
                     <div className="relative">
                       <div className="absolute -left-3 top-1.5 w-2 h-2 rounded-full bg-[#20384f]" />
                     </div>

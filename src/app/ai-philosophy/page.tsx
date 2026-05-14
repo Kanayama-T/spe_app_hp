@@ -101,13 +101,19 @@ export default function AiPhilosophyPage() {
               />
               <div className="absolute inset-0 bg-[#f8fcff]/10" />
             </div>
-            <div className="absolute bottom-8 left-0 flex h-24 w-48 items-center gap-4 bg-[#bfe7f7] px-7 shadow-2xl shadow-[#9ccfe1]/30">
-              <span className="text-5xl font-light leading-none">42</span>
-              <span className="text-[10px] font-black uppercase leading-4 tracking-[0.22em]">
-                Years
-                <br />
-                of Trust
-              </span>
+            <div
+              className="absolute bottom-8 left-0 w-[290px] overflow-hidden border border-[#8dcce4]/70 bg-gradient-to-r from-[#dff2fb] via-[#c6eaf8] to-[#9fdcf2] px-5 py-4 shadow-2xl shadow-[#78acc6]/35"
+              style={{ clipPath: "polygon(0 0, calc(100% - 26px) 0, 100% 26px, 100% 100%, 18px 100%, 0 calc(100% - 18px))" }}
+            >
+              <div className="relative mb-3 h-px w-12 bg-[#2f6f8e]/45" />
+              <div className="relative flex items-end gap-3 text-[#17344a]">
+                <span className="pb-2 text-[15px] font-black tracking-[0.28em]">創業</span>
+                <span className="text-[58px] font-thin leading-none">42</span>
+                <span className="pb-2 text-[15px] font-black tracking-[0.22em]">年</span>
+              </div>
+              <div className="relative mt-2 text-[9px] font-black uppercase tracking-[0.24em] text-[#2f6f8e]">
+                SYSTEM DEVELOPMENT SINCE 1983
+              </div>
             </div>
             <div className="absolute bottom-6 right-0 hidden text-[10px] uppercase tracking-[0.28em] text-[#91aabc] [writing-mode:vertical-rl] lg:block">
               SYSTEM PLAN EXCELLENCE
