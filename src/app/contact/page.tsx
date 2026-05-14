@@ -16,13 +16,14 @@ export default function ContactPage() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
   const [turnstileToken, setTurnstileToken] = useState("");
+  const [turnstileReady, setTurnstileReady] = useState(false);
   const [form, setForm] = useState({
     name: "", company: "", tel: "", email: "", type: "", message: "", website: "",
   });
   const siteKey = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY;
 
   useEffect(() => {
-    if (!siteKey || !window.turnstile || sent) return;
+    if (!siteKey || !turnstileReady || !window.turnstile || sent) return;
 
     const widgetId = window.turnstile.render("#turnstile-widget", {
       sitekey: siteKey,
@@ -35,7 +36,7 @@ export default function ContactPage() {
         window.turnstile.remove(widgetId);
       }
     };
-  }, [siteKey, sent]);
+  }, [siteKey, sent, turnstileReady]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     setForm({ ...form, [e.target.name]: e.target.value });
@@ -76,7 +77,11 @@ export default function ContactPage() {
 
   return (
     <div className="pt-16 bg-[#f8fcff] text-[#20384f]">
-      <Script src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit" strategy="afterInteractive" />
+      <Script
+        src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit"
+        strategy="afterInteractive"
+        onLoad={() => setTurnstileReady(true)}
+      />
       {/* Header */}
       <section className="border-b border-[#d8edf7] px-6 py-16">
         <div className="max-w-4xl mx-auto">
