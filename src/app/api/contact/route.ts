@@ -93,7 +93,8 @@ async function sendByResend(payload: Required<Omit<ContactPayload, "website" | "
   });
 
   if (!response.ok) {
-    throw new Error("Failed to send email.");
+    const detail = await response.text();
+    throw new Error(`Failed to send email. status=${response.status} body=${detail}`);
   }
 }
 
