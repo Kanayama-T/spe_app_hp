@@ -1,152 +1,206 @@
 # spec-summary.md
 
-## 1. 目的
-- 既存WordPress公開中のドメインを維持しつつ、Next.jsサイトをVercelで公開。
-- お問い合わせフォームを `info@sp-jp.com` 宛に実送信可能にする。
-- スパム/ボット送信を減らすため、人間確認（Cloudflare Turnstile）を導入。
+## 1. この仕様書の目的
+この文書は、`spe_app_hp` の公開サイトにおける「会社案内更新」と「お問い合わせ送信基盤（Cloudflare + Resend + Vercel + さくらDNS）」の最終仕様を、非エンジニアでも追える形でまとめたものです。
 
-## 2. 今回の変更内容（コード）
+---
 
-### 2.1 表示テキスト修正
-- ヒーロー実績表示を `42 Years of Trust` に修正。
-- 対象:
-  - `src/app/ai-philosophy/page.tsx`
+## 2. 今回の最終成果（結論）
+1. 会社案内ページにチラシ内容を反映済み（大幅な構成変更なし）
+2. 沿革をチラシ準拠に更新済み
+3. トップの `42 Years of Trust` を `創業42年` デザインに変更済み
+4. お問い合わせフォームは Turnstile 認証 + Resend 送信で動作
+5. 送信先メールは `info@sp-jp.com`（要件どおり）
+6. Resend ドメイン認証（`sp-jp.com`）は `Verified` 済み
+7. さくらDNSの受信MXは復旧済み（受信確認済み）
 
-### 2.2 ヘッダーロゴ差し替え
-- テキストロゴ `SPE / Towards the future` を画像ロゴに置換。
-- 参照画像: `/public/spe-logo.png`
-- サイズを縮小調整済み（compact/通常で別サイズ）。
-- 対象:
-  - `src/components/BrandLogo.tsx`
-  - `public/spe-logo.png`
+---
 
-### 2.3 お問い合わせフォーム実装
-- 送信先メール: `info@sp-jp.com`
-- メール件名: `【HPよりお問い合わせが届きました！】`
-- クライアントから `POST /api/contact` で送信。
-- Cloudflare Turnstileトークン必須化。
-- サーバー側で以下を実装:
-  - 必須項目バリデーション
-  - Turnstile検証
-  - ハニーポット
-  - 簡易レート制限（1分5回/IP）
-  - Resend APIでメール送信
-- 対象:
-  - `src/app/contact/page.tsx`
-  - `src/app/api/contact/route.ts`
+## 3. 「cloudflare.com」「resend.com」で何をしているか
 
-### 2.4 環境変数テンプレート
-- `.env.example` を追加。
-- `.gitignore` に `!.env.example` を追加して追跡対象化。
-- 対象:
-  - `.env.example`
-  - `.gitignore`
+### 3.1 Cloudflare Turnstile（https://dash.cloudflare.com/）
+目的: 問い合わせ送信が「人間操作かどうか」を検証する。
 
-## 3. 公開基盤（本番）
+実装上の役割:
+- フロントで Turnstile ウィジェットを表示
+- ユーザーが通過するとトークン発行
+- サーバー側で Secret Key を使ってトークン検証
 
-### 3.1 リポジトリ
-- GitHub: `Kanayama-T/spe_app_hp`
-- ブランチ: `main`
+この仕組みがないと:
+- Bot の自動投稿やスパム送信を受けやすくなる
 
-### 3.2 ホスティング
-- Vercelプロジェクト: `spe-app-hp`
-- 本番ドメイン:
-  - `www.sp-jp.com`（Production）
-  - `sp-jp.com`（`www.sp-jp.com` へ307リダイレクト）
+今回対応したポイント:
+- ウィジェット表示が出ない問題を修正（スクリプト読込完了後に render）
+- 認証失敗時ログを追加（例: `timeout-or-duplicate`）
 
-### 3.3 DNS（さくら側）
-- `www.sp-jp.com`:
-  - `CNAME` → Vercel指定値
-- `sp-jp.com`:
-  - `A` → Vercel指定値
-- 現在Vercel表示は `Valid Configuration` 確認済み。
+### 3.2 Resend（https://resend.com/）
+目的: サイトの問い合わせ内容をメールとして `info@sp-jp.com` に届ける。
 
-## 4. 必須環境変数（Vercel）
+実装上の役割:
+- `/api/contact` から Resend API に送信リクエスト
+- Resend が実際にメール配送
 
-以下を `Production and Preview` に設定済み想定:
+この仕組みがないと:
+- フォーム送信してもメール通知が飛ばない
 
+今回対応したポイント:
+- `sp-jp.com` を Resend でドメイン認証（SPF/DKIM）
+- `CONTACT_FROM_EMAIL` を `SPE Web <info@sp-jp.com>` に設定
+- 403エラー原因切り分けのため、送信失敗ログを強化
+
+---
+
+## 4. コード変更（確定版）
+
+### 4.1 会社案内更新
+対象: `src/app/company/page.tsx`
+
+変更内容:
+1. 沿革をチラシ準拠に差し替え
+- 1983年 創業
+- 1980年代後半 業務システム開発開始
+- 2000年代 Web・オープン系システムに対応
+- 2020年以降 AWS導入・インフラ構築支援
+- 2024年以降 AI・OCR活用サービス開始
+- 現在 DX推進・業務改善をトータルで支援
+
+2. チラシ掲載サービスを追加
+- 「チラシ掲載の主な対応領域」セクションを追加
+
+3. 沿革の年表示の折返しを解消
+- 年カラムを `nowrap` 化、幅調整
+
+### 4.2 トップの実績バッジ更新
+対象: `src/app/ai-philosophy/page.tsx`
+
+変更内容:
+1. `42 Years of Trust` を `創業 42 年` に変更
+2. 角を斜めにカットした意匠へ変更
+3. ガラス調は要望により撤回、ソリッドデザインへ調整
+
+### 4.3 お問い合わせフォームの認証安定化
+対象: `src/app/contact/page.tsx`
+
+変更内容:
+1. Turnstile スクリプト `onLoad` 後に描画するよう修正
+2. `turnstileReady` state を追加して描画タイミングを安定化
+
+### 4.4 お問い合わせAPIの運用ログ強化
+対象: `src/app/api/contact/route.ts`
+
+変更内容:
+1. Turnstile 検証結果の `error-codes` をログ化
+2. Resend 失敗時に `status` と `body` をログ化
+3. 実行中設定の確認用ログ追加
+- `from`
+- `to`
+- `apiKeyPrefix`（先頭8文字のみ）
+
+注記:
+- 3 のログは原因特定のための運用ログ。不要になれば削除してよい。
+
+---
+
+## 5. 環境変数の最終仕様（Vercel）
+
+必須:
 1. `NEXT_PUBLIC_TURNSTILE_SITE_KEY`
 2. `TURNSTILE_SECRET_KEY`
 3. `RESEND_API_KEY`
 4. `CONTACT_TO_EMAIL=info@sp-jp.com`
-5. `CONTACT_FROM_EMAIL=SPE Web <onboarding@resend.dev>`（暫定）
+5. `CONTACT_FROM_EMAIL=SPE Web <info@sp-jp.com>`
 
-## 5. 外部サービス設定
+設定先:
+- `Production`（必要に応じて `Preview` も）
 
-### 5.1 Cloudflare Turnstile
-- 設定画面URL（例）:
-  - `https://dash.cloudflare.com/f2fc77c72ba07dfab383a0ed4007789b/turnstile/add`
-- Widget名: `sp-jp-contact`
+注意:
+- 変更後は必ず `Save` → `Redeploy`。
+- 保存だけでは現在の本番デプロイに反映されない。
+
+---
+
+## 6. 外部設定の最終仕様
+
+### 6.1 Turnstile Widget
 - Hostname:
   - `www.sp-jp.com`
   - `sp-jp.com`
 - Mode: `Managed`
-- 発行キー:
-  - Site Key → `NEXT_PUBLIC_TURNSTILE_SITE_KEY`
-  - Secret Key → `TURNSTILE_SECRET_KEY`
-- なぜ必要か:
-  - フォーム送信前に「人間による操作」を検証し、ボットの自動送信やスパム投稿を減らすため。
-  - サーバー側でSecret Key検証を行うことで、不正トークン送信を遮断するため。
 
-### 5.2 Resend
-- オンボーディングURL:
-  - `https://resend.com/onboarding`
-- APIキー発行済み（`re_...`）。
-- `RESEND_API_KEY` に設定。
-- 今後の推奨:
-  - Resendで `sp-jp.com` をドメイン認証
-  - `CONTACT_FROM_EMAIL` を `SPE Web <noreply@sp-jp.com>` に切り替え
-- なぜ必要か:
-  - サイトからの問い合わせ内容を `info@sp-jp.com` へメール配信するための送信基盤が必要なため。
-  - APIキーでサーバーから安全に送信認証を行うため。
-  - 独自ドメイン認証（SPF/DKIM）により、迷惑メール判定を下げて到達率を上げるため。
+### 6.2 Resend Domain
+- Domain: `sp-jp.com`
+- Status: `Verified`
 
-## 6. デプロイ運用手順（再現用）
+### 6.3 さくらDNS（Resend送信用）
+Resend用に追加したレコード:
+1. `resend._domainkey` TXT（DKIM）
+2. `send` MX（`10 feedback-smtp....amazonses.com.`）
+3. `send` TXT（SPF）
 
-1. ローカルで変更
+重要:
+- 受信メール用の `@` MX は別管理。
+- `send` サブドメインの設定と混同しない。
+
+---
+
+## 7. 障害履歴と解決内容
+
+### 7.1 Turnstileが表示されず送信不可
+症状:
+- 「私はロボットではありませんの認証を完了してください」
+
+原因:
+- スクリプト読込後に render が再実行されないタイミング不整合
+
+対応:
+- `onLoad` と `turnstileReady` による再描画制御で解決
+
+### 7.2 Resend 403（testing emails only）
+症状:
+- `status=403 validation_error`
+
+原因:
+- `from` が `onboarding@resend.dev` のまま実行されていた
+- 本番環境変数の反映漏れ/再デプロイ漏れ
+
+対応:
+- `CONTACT_FROM_EMAIL` を `SPE Web <info@sp-jp.com>` に設定
+- Resend ドメイン `Verified` を確認
+- ログで実行時 `from` を確認しながら修正
+
+### 7.3 独自ドメインメール受信停止
+症状:
+- 送信できるが受信できない
+
+原因:
+- `@` のMX設定が一時的に不正化
+
+対応:
+- `sp-jp.com` のMXを正規値に修正
+- `nslookup -type=mx sp-jp.com` で確認
+- 受信復旧を確認済み
+
+---
+
+## 8. 現在の動作確認チェックリスト
+1. `https://www.sp-jp.com/contact` で Turnstile が表示される
+2. フォーム送信で「送信完了しました」が表示される
+3. `info@sp-jp.com` に着信する
+4. Vercel Logs で `/api/contact` が 200 系
+
+---
+
+## 9. 運用手順（今後）
+1. コード変更
 2. `git add .`
 3. `git commit -m "update:YYYYMMDD_HHMM"`
 4. `git push origin main`
-5. Vercelで自動デプロイ確認
-6. 環境変数変更時は `Redeploy` 実行
+5. Vercel 自動デプロイ確認
+6. 環境変数変更時は必ず `Redeploy`
 
-## 7. 動作確認チェックリスト
+---
 
-1. `https://www.sp-jp.com` が表示される
-2. ロゴが画像表示になっている
-3. `42 Years of Trust` が反映されている
-4. `/contact` でTurnstileが表示される
-5. 必須入力 + Turnstile完了で送信成功
-6. 件名 `【HPよりお問い合わせが届きました！】` で受信
-7. `info@sp-jp.com` へメール到達する
-
-## 8. 既知事項
-- この作業環境ではネイティブ依存不足によりローカル `next build` 検証が失敗するケースあり。
-- Vercel上でのビルド/公開を正として運用。
-- 現時点で `/contact` にTurnstileウィジェットが表示されないケースがあり、フォームで
-  `「私はロボットではありません」の認証を完了してください。`
-  が表示され送信できない事象が継続中。
-- Pre-clearance (`Yes/No`) は今回の表示有無には基本無関係。
-
-## 9. 次にやるべきこと（推奨）
-
-1. Turnstile表示不具合の切り分け
-2. Resendドメイン認証（`sp-jp.com`）
-3. `CONTACT_FROM_EMAIL` を独自ドメイン送信元へ変更
-4. お問い合わせフォーム実送信テスト（本番）
-5. 受信メールの迷惑メール判定を確認（SPF/DKIM/DMARC）
-
-## 10. 次回の最初の確認手順（Turnstile不具合）
-
-1. Vercel Environment Variables の値再確認
-   - `NEXT_PUBLIC_TURNSTILE_SITE_KEY`
-   - `TURNSTILE_SECRET_KEY`
-2. Cloudflare Turnstile widget の Hostname再確認
-   - `www.sp-jp.com`
-   - `sp-jp.com`
-3. Vercelで `Redeploy` 実行（環境変数反映）
-4. ブラウザで `https://www.sp-jp.com/contact` を `Ctrl+F5` で再読込
-5. 広告ブロッカーOFF / シークレットモード / 別ブラウザ（Chrome/Edge）で表示確認
-6. まだ表示されない場合:
-   - 開発者ツールConsoleのエラー採取
-   - Site Keyの再発行と差し替え
+## 10. 追加メモ（業務向け）
+1. DNS変更は「送信系（sendサブドメイン）」と「受信系（@のMX）」を分けて考える
+2. 問い合わせ不達時は、まず `/api/contact` ログの `from/to/status/body` を見る
+3. Turnstile の `timeout-or-duplicate` は再認証で解消する
