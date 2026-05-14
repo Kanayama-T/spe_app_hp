@@ -63,6 +63,8 @@ async function sendByResend(payload: Required<Omit<ContactPayload, "website" | "
 
   const to = process.env.CONTACT_TO_EMAIL || "info@sp-jp.com";
   const from = process.env.CONTACT_FROM_EMAIL || "SPE Web <onboarding@resend.dev>";
+  const apiKeyPrefix = apiKey.slice(0, 8);
+  console.error("Resend config", { from, to, apiKeyPrefix });
 
   const text = [
     "Webサイトからお問い合わせが届きました。",
